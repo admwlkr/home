@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Wealth</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .container h2 {
+            text-align: center;
+        }
+        .tab {
+            display: inline-block;
+            padding: 10px;
+            margin-right: 10px;
+            cursor: pointer;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            color: #000;
+        }
+        .tab.active {
+            background-color: #ffffff;
+            color: #000;
+            font-weight: bold;
+        }
+        .tab.disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="number"], input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .summary {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        #savingsField {
+            display: none;
+        }
+        .summary p {
+            margin: 0;
+            padding: 5px 0;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .spending-table {
+            width: 100%;
+            margin-top: 20px;
+        }
+        .spending-table input[type="text"], .spending-table input[type="number"], .spending-table select {
+            width: 80%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        .spending-table button {
+            width: auto;
+            padding: 8px;
+        }
+        .negative {
+            color: red;
+        }
+        img {
+            display: block;
+            margin: 0 auto 20px auto;
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+    <!-- Add SheetJS library for handling Excel files -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Add the initial image here -->
+        <img id="dynamicImage" src="https://i.imgur.com/edV3dGO.png" alt="Logo Image">
+
+        <h2>Money Manager</h2>
+
+        <!-- Navigation tabs -->
+        <div>
+            <div id="incomeTab" class="tab active">In & Out</div>
+            <div id="spendingTab" class="tab disabled">Spending</div>
+        </div>
+
+        <!-- Income & Balance Tab Content -->
+        <div class="tab-content active" id="incomeTabContent">
+            <!-- Month and Year Selection -->
+            <label for="month">Select Month:</label>
+            <select id="month">
+                <option value="January">January</option>
+                <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
+            </select>
+
+            <label for="year">Select Year:</label>
+            <select id="year">
+                <!-- Years will be populated by JavaScript -->
+            </select>
+
+            <!-- PAY Field -->
+            <label for="pay">Monthly Pay (£):</label>
+            <input type="number" id="pay" placeholder="Total Pay Goes Here">
+
+            <!-- BILLS Field -->
+            <label for="bills">Bills (£):</label>
+            <input type="number" id="bills" placeholder="Money Sent To Flen">
+
+            <!-- Balance -->
+            <button id="calculateBalance">Calculate Balance</button>
+            <label for="balance">Balance (£):</label>
+            <input type="number" id="balance" disabled>
+
+            <!-- Savings Section -->
+            <label>
+                <input type="checkbox" id="savingsCheckbox"> Personal Savings?
+            </label>
+            <div id="savingsField">
+                <label for="savings">Savings (£):</label>
+                <input type="number" id="savings" placeholder="Don't be stingy.">
+                <button id="calculateSavings">Deduct Savings</button>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary" id="summary"></div>
+
+            <!-- Export Button -->
+            <button id="export">Export to Spreadsheet</button>
+        </div>
+
+        <!-- Spending Tab Content -->
+        <div class="tab-content" id="spendingTabContent">
+            <!-- Replace the image when on the spending tab -->
+            <img id="spendingImage" src="https://i.imgur.com/Ph5BjRu.png" alt="Spending Image">
+
+            <h3>Available Balance: £<span id="spendingBalance"></span></h3>
+
+            <table class="spending-table" id="spendingTable">
+                <tr>
+                    <td><label>Purchase</label></td>
+                    <td><label>Price (£)</label></td>
+                    <td><label>Type?</label></td>
+                </tr>
+                <tr class="purchase-row">
+                    <td><input type="text" class="purchase"></td>
+                    <td><input type="number" class="price"></td>
+                    <td>
+                        <select class="type">
+                            <option value="Essential">Essential</option>
+                            <option value="Treat">Treat</option>
+                        </select>
+                    </td>
+                    <td><button class="removePurchase" style="display:none;">Remove</button></td>
+                </tr>
+            </table>
+            <button id="addPurchase">+ Add Purchase</button>
+
+            <h4 id="spendingSummary"></h4>
+
+            <!-- Export Spending Data -->
+            <button id="exportSpending">Export Spending to Spreadsheet</button>
+        </div>
+    </div>
+
+    <script>
+        // Populate the year dropdown from 2024 to 2094
+        const yearSelect = document.getElementById('year');
+        for (let year = 2024; year <= 2094; year++) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        }
+
+        let finalBalance = 0;
+        let alertShown = false; // Flag to track if alert has been shown
+
+        // Handle Balance Calculation
+        document.getElementById('calculateBalance').addEventListener('click', function() {
+            const pay = parseFloat(document.getElementById('pay').value);
+            const bills = parseFloat(document.getElementById('bills').value);
+            if (!isNaN(pay) && !isNaN(bills)) {
+                finalBalance = pay - bills;
+                document.getElementById('balance').value = finalBalance.toFixed(2);
+                document.getElementById('summary').innerHTML = `
+                    <p>Total Pay: £${pay.toFixed(2)}</p>
+                    <p>Bills: £${bills.toFixed(2)}</p>
+                    <p>Balance: £${finalBalance.toFixed(2)}</p>
+                `;
+                // Enable the Spending tab
+                document.getElementById('spendingTab').classList.remove('disabled');
+            } else {
+                alert('Enter pay and bills first!');
+            }
+        });
+
+        // Handle Savings Checkbox Toggle
+        document.getElementById('savingsCheckbox').addEventListener('change', function() {
+            const savingsField = document.getElementById('savingsField');
+            if (this.checked) {
+                savingsField.style.display = 'block';
+            } else {
+                savingsField.style.display = 'none';
+            }
+        });
+
+        // Handle Savings Calculation
+        document.getElementById('calculateSavings').addEventListener('click', function() {
+            const savings = parseFloat(document.getElementById('savings').value);
+            if (!isNaN(savings) && savings <= finalBalance) {
+                finalBalance -= savings;
+                document.getElementById('balance').value = finalBalance.toFixed(2);
+                document.getElementById('summary').innerHTML += `
+                    <p>Savings: £${savings.toFixed(2)}</p>
+                    <p>New Balance: £${finalBalance.toFixed(2)}</p>
+                `;
+                // Enable the Spending tab
+                document.getElementById('spendingTab').classList.remove('disabled');
+            } else {
+                alert('You wish!');
+            }
+        });
+
+        // Handle tab switching
+        document.getElementById('incomeTab').addEventListener('click', function() {
+            document.getElementById('incomeTabContent').classList.add('active');
+            document.getElementById('spendingTabContent').classList.remove('active');
+            this.classList.add('active');
+            document.getElementById('spendingTab').classList.remove('active');
+            // Change back to the income image
+            document.getElementById('dynamicImage').style.display = 'block';
+            document.getElementById('spendingImage').style.display = 'none';
+        });
+        
+        document.getElementById('spendingTab').addEventListener('click', function() {
+            document.getElementById('incomeTabContent').classList.remove('active');
+            document.getElementById('spendingTabContent').classList.add('active');
+            this.classList.add('active');
+            document.getElementById('incomeTab').classList.remove('active');
+            // Change to the spending image
+            document.getElementById('dynamicImage').style.display = 'none';
+            document.getElementById('spendingImage').style.display = 'block';
+            document.getElementById('spendingBalance').textContent = finalBalance.toFixed(2);
+        });
+
+        // Handle adding purchases
+        document.getElementById('addPurchase').addEventListener('click', function() {
+            const table = document.getElementById('spendingTable');
+            const newRow = document.createElement('tr');
+            newRow.classList.add('purchase-row');
+            newRow.innerHTML = `
+                <td><input type="text" class="purchase"></td>
+                <td><input type="number" class="price"></td>
+                <td>
+                    <select class="type">
+                        <option value="Essential">Essential</option>
+                        <option value="Treat">Treat</option>
+                    </select>
+                </td>
+                <td><button class="removePurchase">Remove</button></td>
+            `;
+            table.appendChild(newRow);
+
+            // Add event listener to remove the purchase row
+            newRow.querySelector('.removePurchase').addEventListener('click', function() {
+                newRow.remove();
+                calculateSpending();
+            });
+        });
+
+        // Handle spending calculation and updating the balance
+        document.addEventListener('input', function(event) {
+            if (event.target.classList.contains('price')) {
+                calculateSpending();
+            }
+        });
+
+        function calculateSpending() {
+            const purchaseRows = document.querySelectorAll('.purchase-row');
+            let totalSpent = 0;
+            purchaseRows.forEach(row => {
+                const price = parseFloat(row.querySelector('.price').value);
+                if (!isNaN(price)) {
+                    totalSpent += price;
+                }
+            });
+
+            const remainingBalance = finalBalance - totalSpent;
+            document.getElementById('spendingBalance').textContent = remainingBalance.toFixed(2);
+
+            if (remainingBalance < 0) {
+                document.getElementById('spendingBalance').classList.add('negative');
+                // Change the image and show alert
+                document.getElementById('spendingImage').src = "https://i.imgur.com/HhOhsdi.png";
+                if (!alertShown) {
+                    alert("BAKA MI-BALANCE");
+                    alertShown = true; // Prevent multiple alerts
+                }
+            } else {
+                document.getElementById('spendingBalance').classList.remove('negative');
+                // Change back to normal image if remaining balance is positive
+                document.getElementById('spendingImage').src = "https://i.imgur.com/Ph5BjRu.png";
+                alertShown = false; // Reset the alert shown flag
+            }
+
+            document.getElementById('spendingSummary').textContent = `Total Spent: £${totalSpent.toFixed(2)}, Remaining Balance: £${remainingBalance.toFixed(2)}`;
+        }
+
+        // Export to Excel using SheetJS (Income & Balance)
+        document.getElementById('export').addEventListener('click', function() {
+            const month = document.getElementById('month').value;
+            const year = document.getElementById('year').value;
+            const pay = parseFloat(document.getElementById('pay').value).toFixed(2);
+            const bills = parseFloat(document.getElementById('bills').value).toFixed(2);
+            const balance = parseFloat(document.getElementById('balance').value).toFixed(2);
+            const savings = document.getElementById('savings').value ? parseFloat(document.getElementById('savings').value).toFixed(2) : '0.00';
+
+            // Create a worksheet (Excel)
+            const worksheet = XLSX.utils.aoa_to_sheet([
+                [{v: 'Month', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}},
+                 {v: 'Year', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}},
+                 {v: 'Total Pay', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}},
+                 {v: 'Bills', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}},
+                 {v: 'Savings', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}},
+                 {v: 'Final Balance', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}}],
+                [month, year, `£${pay}`, `£${bills}`, `£${savings}`, `£${balance}`]
+            ]);
+
+            // Create a new workbook
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Summary');
+
+            // Export the workbook to Excel file
+            XLSX.writeFile(workbook, `Summary_${month}_${year}.xlsx`);
+        });
+
+        // Export Spending Data to Excel
+        document.getElementById('exportSpending').addEventListener('click', function() {
+            const purchaseRows = document.querySelectorAll('.purchase-row');
+            const spendingData = [
+                [{v: 'Purchase', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}},
+                 {v: 'Price (£)', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}},
+                 {v: 'Type', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}}]
+            ];
+
+            let totalSpent = 0;
+            purchaseRows.forEach(row => {
+                const purchase = row.querySelector('.purchase').value;
+                const price = parseFloat(row.querySelector('.price').value).toFixed(2);
+                const type = row.querySelector('.type').value;
+                if (!isNaN(price)) {
+                    totalSpent += parseFloat(price);
+                }
+                spendingData.push([purchase, `£${price}`, type]);
+            });
+
+            const remainingBalance = finalBalance - totalSpent;
+            spendingData.push(
+                ['', '', ''],
+                [{v: 'Total Spent', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}}, `£${totalSpent.toFixed(2)}`, ''],
+                [{v: 'Remaining', s: {font: {bold: true}, fill: {fgColor: {rgb: 'ADD8E6'}}}}, `£${remainingBalance.toFixed(2)}`, '']
+            );
+
+            // Create a worksheet (Excel)
+            const worksheet = XLSX.utils.aoa_to_sheet(spendingData);
+
+            // Create a new workbook
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Spending Summary');
+
+            // Export the workbook to Excel file
+            XLSX.writeFile(workbook, 'Spending_Summary.xlsx');
+        });
+    </script>
+
+</body>
+</html>
